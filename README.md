@@ -7,3 +7,4 @@ SIADS 699 repo
 
 ### helpful for code
 1.  [G collab, how to replicate the MLOPS in your notebook](https://colab.research.google.com/drive/1VWcb37M-XYESfQaOXFaF5zjzi984wzw4?usp=sharing)
+2. [identify and anlyze ideal trades, by completion time](https://colab.research.google.com/drive/1DDCHRaHRBGfl59Xw7sq8-4uTa7iVPcVn?usp=sharing)
