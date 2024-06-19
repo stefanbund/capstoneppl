@@ -1,0 +1,4 @@
+classifier,best_params,accuracy,most_important_feature,mif_mean,mif_std
+LogisticRegression,"{'C': 1, 'multi_class': 'ovr', 'penalty': 'l2', 'random_state': 42}",0.7046662728883638,sum_change,0.2321317772196779,0.003383714935138381
+BernoulliNB,{'fit_prior': True},0.49143532191376255,sum_change,0.2321317772196779,0.003383714935138381
+KNeighborsClassifier,"{'algorithm': 'auto', 'n_jobs': 1, 'n_neighbors': 3}",0.9031305375073834,sum_change,0.2321317772196779,0.003383714935138381
