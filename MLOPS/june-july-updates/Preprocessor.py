@@ -1,4 +1,4 @@
-#COPYRIGHT STEFAN L. BUND, copyright available at https://github.com/stefanbund/radidisco. No use is authorized and no sharing license is granted.
+
 import pandas as pd
 import os
 import numpy as np
@@ -6,7 +6,6 @@ import requests #get all symbols from coinbase via query
 
 # API endpoint for cryptocurrencies
 url = "https://api.coinbase.com/v2/currencies/crypto"
-bbp_loc = '/home/stefan/Desktop/STADIUM-DATA/BBP/' #new folder outsie of repo, per july 10th
 
 # Make a GET request to retrieve the list of cryptocurrencies
 response = requests.get(url).json()
@@ -171,4 +170,30 @@ for pair, name in cryptos:
 
         final_df_binary = final_df.iloc[:, :-1]
         final_df_binary['label'] = (final_df_binary['surge_targets_met_pct']> 0.74).astype(int)
-        final_df_binary.to_csv(f'{bbp_loc}{pair}-binary_binned_pipeline.csv')
+        final_df_binary.to_csv(f'./BBP/{pair}-binary_binned_pipeline.csv')
+
+
+# def getCAPSByDateAndType(pair):  #returns a dict, date + df caps for that date, then extended date and time
+#                                     # print("for type, ", type)  ./lob_caps/
+#         ret = [] #FORMERLY WALKING THE LOB_CAPS FOLDER, now loads all cell2024-x.csv files
+#         # Step 1: List files starting with "cell"
+#         directory = os.getcwd()  # Get current directory
+#         file_list = [filename for filename in os.listdir(directory) if filename.startswith("cell")]
+#         # Initialize master list
+#         master = []
+#         # Step 2: Load each file as a Pandas DataFrame
+#         for filename in file_list:
+#             filepath = os.path.join(directory, filename)
+#             try:
+#                 provisional = pd.read_csv(filepath)  # Assuming CSV files, adjust as needed
+#                 print(provisional.columns)
+#                 # Step 3: Search for rows where "symbol" matches the value of "pair"
+#                 symbol_rows = provisional[provisional["symbol"] == self.pair]
+#                 # Step 4: Append matching rows to master list
+#                 master.extend(symbol_rows.to_dict(orient="records"))
+#             except pd.errors.EmptyDataError:
+#                 # Handle empty files (if needed)
+#                 pass
+#         return master # a list of rows matching self.pair
+        
+        

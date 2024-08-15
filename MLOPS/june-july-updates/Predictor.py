@@ -1,6 +1,3 @@
-#COPYRIGHT STEFAN L. BUND, copyright available at https://github.com/stefanbund/radidisco. No use is authorized and no sharing license is granted.
-# reflects the need to insert a prediction with a full precursor, used to predict. So the first outcome is predicted versus BBP, then a 
-# duration prediction made against the WAITS-META figures, for that symbol
 import pandas as pd
 import numpy as np
 import os
@@ -8,13 +5,12 @@ import sched, time, threading
 import csv
 from datetime import date, datetime
 from imblearn.over_sampling import ADASYN
-from sklearn.neighbors import KNeighborsClassifier, NeighborhoodComponentsAnalysis
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.preprocessing import StandardScaler
 import csv
 import subprocess
-from sklearn.neighbors import NeighborhoodComponentsAnalysis as NCA
 
 
 def build_classifier(classifier_name, params): 
@@ -35,8 +31,12 @@ def build_BERT():
 loads the model file from our folder for models, one at a time
 loads the BBP.csv data, for that model'''
 def load_model(filename, modelDictionary):  
+    # print(str(modelDictionary['classifier']), modelDictionary['best_params'].to_dict())
+    # classifier_mapping = {
+    # "KNeighbors": KNeighborsClassifier, "BernoulliNB":BernoulliNB,
+    # "LogisticRegression": LogisticRegression    }
     symbol  = filename[:filename.index("-")]  #locate symbol for BBP
-    bbp_location = "/home/stefan/Desktop/STADIUM-DATA/BBP/" + symbol + "-binary_binned_pipeline.csv"  #get from BBP folder
+    bbp_location = "./BBP/" + symbol + "-binary_binned_pipeline.csv"  #get from BBP folder
     # print(f"load model with filename {filename}, for symbol, {symbol}, at {bbp_location}")
     m2_pipeline = pd.read_csv(bbp_location)  #get BBP for symbol
     m2_pipeline['time'] = m2_pipeline['time'].ffill() + 100 #.fillna(method='ffill') + 100
@@ -56,16 +56,10 @@ def load_model(filename, modelDictionary):
         extracted_dict = {}
     classifier_name= str( modelDictionary['classifier'].iloc[0])  
     classifier_x = build_classifier(classifier_name, extracted_dict)
-    # print(symbol, classifier_x) 
-    if classifier_name == 'LogisticRegression':  #new as of June 29th, using NCA
-        # Initialize the NeighborhoodComponentsAnalysis 
-        nca = NeighborhoodComponentsAnalysis(n_components=7) # You can choose the number of components 
-        # Fit and transform the data using NCA 
-        X_train_nca = nca.fit_transform(X_train_scaled, y_resampled) 
-        X_test_nca = nca.transform(X_resampled) 
-        return classifier_x.fit(X_train_nca, y_resampled)
-    else: 
-        return classifier_x.fit(X_train_scaled, y_resampled) #for those not using NCA, only Scaler, ADASYN
+    print(symbol, classifier_x) 
+
+    return classifier_x.fit(X_train_scaled, y_resampled)
+
 class Predictor:
     def __init__(self, symbol, model_meta,meanChange ):
         self.model_meta = model_meta
@@ -80,13 +74,6 @@ class Predictor:
         self.predictions_df = pd.DataFrame()
         self.thread = threading.Thread(target=self.run_scheduler) #make Prediction
         self.thread.start()
-        self.base_loc = '/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/'
-        self.desktop_offload = '/home/stefan/Desktop/STADIUM-DATA/ERROR_LOGS/'
-        self.directional_pred_folder = '/home/stefan/Desktop/STADIUM-DATA/DIRECTIONAL_PREDICTIONS/'
-        self.send_to_trader = '/home/stefan/Desktop/STADIUM-DATA/SCP-PRED/'
-                                          #/home/stefan/Desktop/STADIUM-DATA/SYMBOL_DURATIONS_FITTABLE/POWR-USD-waits-meta-data.csv
-        self.duration_prediction_folder = '/home/stefan/Desktop/STADIUM-DATA/SYMBOL_DURATIONS_FITTABLE/'
-
 
     def run_scheduler(self):  #create the csv file and the scheduled prediction, ie make prediction, below
         self.makePrediction()
@@ -94,35 +81,21 @@ class Predictor:
 
     def insert_prediction(self, time, y_pred, exp, buy_cap, ask_cap, bid_vol, ask_vol, sum_change, length): 
         data = [self.symbol, time, exp, y_pred, buy_cap, ask_cap, bid_vol, ask_vol, sum_change, length]  #6-22, we will take latest precursor, and couple with duration in WM
-        # loc = '/home/stefan/Desktop/STADIUM-DATA/DIRECTIONAL_PREDICTIONS/'#'/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/PRED/'
-        output_csv_path = self.directional_pred_folder +self.symbol +"-prediction-log-" + time + ".csv"
+        loc = '/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/PRED/'
+        output_csv_path = loc +self.symbol +"-prediction-log-" + time + ".csv"
         with open(output_csv_path, "w", newline="") as csv_file:
             self.writer = csv.writer(csv_file)  # Create a CSV writer object
             self.writer.writerow(data)  # Split the line by comma and write it to the CSV
-        print(f"{self.symbol} prediction filed") 
-        return 
-    
-    def send_trade_for_prediction(self, time, y_pred, model_meta, precursor_buy_cap_pct_change, precursor_ask_cap_pct_change, precursor_bid_vol_pct_change,  
-                precursor_ask_vol_pct_change,sum_change,length, duration_y_pred ):  #save to csv and send via scp as we normally would, to traders
-        try: 
-            data = [time, y_pred, model_meta, precursor_buy_cap_pct_change, precursor_ask_cap_pct_change,precursor_bid_vol_pct_change,  
-                    precursor_ask_vol_pct_change,sum_change,length, duration_y_pred] 
-            # loc = '/home/stefan/Desktop/STADIUM-DATA/SCP-PRED/'
-            output_csv_path = self.send_to_trader +self.symbol +"-prediction-log-" + time + ".csv"
-            with open(output_csv_path, "w", newline="") as csv_file:
-                self.writer = csv.writer(csv_file)  # Create a CSV writer object
-                self.writer.writerow(data)  # Split the line by comma and write it to the CSV
-            print(f"{self.symbol} DURATION enabled prediction filed") 
-        except Exception as e:
-            print(f"{self.symbol} send final trade rec with DURATION error: {e}")
+        print(f"prediction filed") 
         #run scp on scp_target_folder
-        scp_path =  self.send_to_trader + "'" +self.symbol +"-prediction-log-" + time + ".csv" + "'"
+        scp_path =  loc + "'" +self.symbol +"-prediction-log-" + time + ".csv" + "'"
         scp_target_folder = '/home/stefan/Desktop/jancula_tests/stadiumBoulevardTrader/working-folder-may-2024/PRED'
+
         scp_command = "scp " + scp_path +" stefan@192.168.6.118:" +scp_target_folder
-        # Run the SCP command
+# Run the SCP command
         subprocess.run(scp_command, shell=True)
         return 
-                   
+                    
     def predictForCompiledPrecursor(self):              #predict, only once the market turns from precursor to surge
         sequence_df = pd.DataFrame(self.precursors)      #prepare to process the precursors
         keepable = ['precursor_buy_cap_pct_change', 
@@ -138,7 +111,7 @@ class Predictor:
         final_df.at[0, 'sum_change'] = sequence_df['change'].sum()
         final_df.at[0, 'length'] = sequence_df.shape[0]
         final_df.at[0, 'time'] = sequence_df['change'].max()
-        # print(f"{self.symbol} ")#  final df:", final_df)
+        print("final df:", final_df)
         X = final_df.values  
         y_pred = self.clf_loaded.predict(X)
         # print(type(y_pred))
@@ -146,54 +119,17 @@ class Predictor:
         # print(now.strftime("%Y-%m-%d %H:%M:%S"), "PREDICTED CLASS:",y_pred)
         if(y_pred.item() == 1):
             self.insert_prediction(now.strftime("%Y-%m-%d %H:%M:%S"), 
-                                   y_pred.item(),self.model_meta,final_df.at[0, 'precursor_buy_cap_pct_change'],final_df.at[0, 'precursor_ask_cap_pct_change'],
-                                   final_df.at[0, 'precursor_bid_vol_pct_change'] ,final_df.at[0, 'precursor_ask_vol_pct_change'],final_df.at[0, 'sum_change'],
+                                   y_pred.item(),
+                                   self.model_meta,
+                                   final_df.at[0, 'precursor_buy_cap_pct_change'],
+                                   final_df.at[0, 'precursor_ask_cap_pct_change'],
+                                   final_df.at[0, 'precursor_bid_vol_pct_change'] ,
+                                   final_df.at[0, 'precursor_ask_vol_pct_change'],
+                                   final_df.at[0, 'sum_change'],
                                    final_df.at[0, 'length'])#insert into PRED, feature-rich, where we analye patternific execution, and duration
+            # print(f"prediction filed") 
             self.precursors.clear()
             sequence_df.drop(sequence_df.index, inplace=True)
-            final_df.at[0, 'y_pred'] = 1 #because we predicted 1
-            try: 
-                # na_values = ['NaN', 'N/A', ' ']
-                print(f"final df columns names: {final_df.columns}")
-                #     final df columns names: Index(['precursor_buy_cap_pct_change', 'precursor_ask_cap_pct_change',
-                #    'precursor_bid_vol_pct_change', 'precursor_ask_vol_pct_change',
-                #    'sum_change', 'length', 'time', 'y_pred']
-                fittable_df = pd.read_csv(f"{self.duration_prediction_folder}{self.symbol}-USD-waits-meta-data.csv") #was TESTLIST
-                wm = ['precursor_buy_cap_pct_change', 'precursor_ask_cap_pct_change','precursor_bid_vol_pct_change',  
-                    'precursor_ask_vol_pct_change','sum_change','length']  #,'bin'] TESTLIST format, y_pred is a constant of 1
-                print(f"START NCA: TESTLIST FILE: \n {self.duration_prediction_folder}{self.symbol}-USD-waits-meta-data.csv")
-                # fittable_df =fittable_df.drop(columns=['buy_cap', 'ask_cap', 'bid_vol', 'ask_vol']) 
-                # List of columns to check
-                columns_to_drop = ['buy_cap', 'ask_cap', 'bid_vol', 'ask_vol']
-
-                # Check if the columns exist in the dataframe and drop them
-                fittable_df = fittable_df.drop(columns=[col for col in columns_to_drop if col in df.columns], errors='ignore')
-
-                fittable_df = fittable_df.dropna()
-                usable_df = fittable_df[wm] #.drop(columns=['buy_cap', 'ask_cap', 'bid_vol', 'ask_vol']) #nan values
-                print(f"\tfittable NCA: \n{usable_df}")
-                nca = NeighborhoodComponentsAnalysis(n_components=6)
-                nca.fit(usable_df.values, fittable_df['bin'])  #ok, from example
-                X_transformed = nca.transform(usable_df.values)  #on keepable columns
-                knn = KNeighborsClassifier(algorithm='auto', n_neighbors=11, weights='distance')     #(n_neighbors=3)
-                #Best Parameters: {'algorithm': 'auto', 'n_neighbors': 11, 'weights': 'distance'}
-
-                knn.fit(X_transformed, fittable_df['bin'])  #trying
-
-                duration_y_pred = knn.predict(final_df[wm].values)              #needs same column names as fittable
-                print(f"\tDURATION PREDICTION: {duration_y_pred}")
-                if duration_y_pred.item() == 1:
-                    self.send_trade_for_prediction(now.strftime("%Y-%m-%d %H:%M:%S"), y_pred.item(),self.model_meta,
-                                    final_df.at[0, 'precursor_buy_cap_pct_change'], final_df.at[0, 'precursor_ask_cap_pct_change'],
-                                    final_df.at[0, 'precursor_bid_vol_pct_change'] , final_df.at[0, 'precursor_ask_vol_pct_change'],
-                                    final_df.at[0, 'sum_change'],final_df.at[0, 'length'], duration_y_pred.item()) #o scp of the trade as we normally would
-            except Exception as e:
-                print(f"\tnca creation and send to csv error, {e}")
-                timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
-                dict = {"time":timestamp,"symbol":self.symbol, "area":"predictForCompiledPrecursor","error":e}
-                err_df = pd.DataFrame(dict,index=[0])
-                print(f"\tsaving error log to csv, {self.desktop_offload}{self.symbol}-{timestamp}-error_log.csv")
-                err_df.to_csv(f"{self.desktop_offload}{self.symbol}-{timestamp}-error_log.csv")
         return
 
     def initial_intake(self):  #GET NEWEST FILE, OR TOP TWO NEWEST FILES? INITIAL INTAKE
@@ -210,9 +146,14 @@ class Predictor:
             return directory + newest_file
         newest_file = get_name_of_newest_csv() #just get the latest data on the symbol, from the cell
         #assume the totality of cell data has been assembled into the MODEL solution...
+        # master = []
+        # print(f'provisional getting, {newest_file}') # Step 2: Load each file as a Pandas DataFrame
         provisional = pd.read_csv(newest_file,index_col=None, header=0)  # Assuming CSV files, adjust as needed
         symbol_rows = provisional[provisional["symbol"] == form] # Step 3: Search for rows where "symbol" matches the value of "pair"
+        # master.append(symbol_rows)# Step 4: Append matching rows to master list
         self.in_in = 1 #flag set to 1 once we have entered the backlog of precursors, start reading tail(1)
+        # print(f"initial intake master is length, {symbol_rows.shape[0]}")
+        # returnable = pd.DataFrame(master)
         return symbol_rows  #pd.read_csv(name) #return a dataframe containing latest data
 
     def get_tail_latest(self):
@@ -280,7 +221,7 @@ class Predictor:
         return result
 
     def makePrediction(self):
-        # print(f'make prediction with {self.symbol}')  #working from scheduler call in init
+        print(f'make prediction with {self.symbol}')  #working from scheduler call in init
         self.my_scheduler.enter(10, 1, self.makePrediction)
 
         # self.my_scheduler.enter
@@ -293,7 +234,7 @@ class Predictor:
             # self.temp_caps_df.ffill()
             lookback_period = 10  
             # threshold = meanChange  # in rows
-            self.temp_caps_df.ffill()# fillna(method='ffill', inplace=True) #Use obj.ffill() or obj.bfill() instead.
+            self.temp_caps_df.fillna(method='ffill', inplace=True)
             # print("10 caps processing...",len(self.temp_caps_df))
             self.temp_caps_df['change'] = self.temp_caps_df['mp'].pct_change(periods=lookback_period) #setup 
             self.temp_caps_df['bc_change'] = self.temp_caps_df['bc'].pct_change(periods=lookback_period)
@@ -301,7 +242,7 @@ class Predictor:
             self.temp_caps_df['tav_change'] = self.temp_caps_df['tav'].pct_change(periods=lookback_period)
             self.temp_caps_df['tbv_change'] = self.temp_caps_df['tbv'].pct_change(periods=lookback_period) #always unitary value for each, always an agg
             self.temp_caps_df = self.temp_caps_df.tail(10)                #necessary, else 10 nans, which spoils the knn predict
-            self.temp_caps_df.ffill()#   fillna(method='ffill', inplace=True)
+            self.temp_caps_df.fillna(method='ffill', inplace=True)
             # print( temp_caps_df)
             # print("change:", self.temp_caps_df['change'].mean())         #duplicate data processing steps to best ability
             for i in range(0, len(self.temp_caps_df),10):                 #replicate data prep step
@@ -322,15 +263,46 @@ class Predictor:
                     # print( temp_caps_df)
                     if len(self.precursors) != 0:
                         self.predictForCompiledPrecursor() 
-                    # else:
-                    #     print("surge but with empty precursors...")
+                    else:
+                        print("surge but with empty precursors...")
         return  
-                       
+                        #THE FOLLOWING WAS COPIED FROM PREDICT FOR COMPILED PRECURSOR, intended for repeat, unconditionally
+                        # sequence_df = pd.DataFrame(self.precursors)      #prepare to process the precursors
+                        # keepable = ['precursor_buy_cap_pct_change', 
+                        #         'precursor_ask_cap_pct_change',
+                        #         'precursor_bid_vol_pct_change', 
+                        #         'precursor_ask_vol_pct_change',
+                        #         'sum_change','length','time']
+                        # final_df = pd.DataFrame(columns=keepable)
+                        # final_df.at[0, 'precursor_buy_cap_pct_change'] = sequence_df['precursor_buy_cap_pct_change'].sum()
+                        # final_df.at[0, 'precursor_ask_cap_pct_change'] = sequence_df['precursor_ask_cap_pct_change'].sum()
+                        # final_df.at[0, 'precursor_bid_vol_pct_change'] = sequence_df['precursor_bid_vol_pct_change'].sum()
+                        # final_df.at[0, 'precursor_ask_vol_pct_change'] = sequence_df['precursor_ask_vol_pct_change'].sum()
+                        # final_df.at[0, 'sum_change'] = sequence_df['change'].sum()
+                        # final_df.at[0, 'length'] = sequence_df.shape[0]
+                        # final_df.at[0, 'time'] = sequence_df['change'].max()
+                        # print("final df:", final_df)
+                        # X = final_df.values  
+                        # y_pred = self.clf_loaded.predict(X)
+                        # # print(type(y_pred))
+                        # now = datetime.now()
+                        # # print(now.strftime("%Y-%m-%d %H:%M:%S"), "PREDICTED CLASS:",y_pred)
+                        # if(y_pred.item() == 1):
+                        #     # self.insert_prediction(now.strftime("%Y-%m-%d %H:%M:%S"), y_pred.item(),self.model_meta)#more recent, 175 entries
+                        #     data = [now.strftime("%Y-%m-%d %H:%M:%S"), y_pred.item(),self.model_meta]
+                        #     # Specify the path to your output CSV file
+                        #     loc = '/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/PRED/'
+                        #     output_csv_path = loc +self.symbol +"-prediction-log-" + time + ".csv"
+                        #     # Open the CSV file in write mode
+                        #     with open(output_csv_path, "w", newline="") as csv_file:
+                        #         self.writer = csv.writer(csv_file)  # Create a CSV writer object
+                        #         self.writer.writerow(data)  # Split the line by comma and write it to the CSV
+                        #         print(f"prediction filed") 
 try:
     while True:  # This creates an infinite loop
         accuracy_threshold = .88
         # current_directory = os.path.dirname(os.path.abspath(__file__))
-        model_folder = '/home/stefan/Desktop/STADIUM-DATA/MODEL-STADIUM' #"/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/MODEL"
+        model_folder = "/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/MODEL"
         #"/home/stefan/Desktop/MARCH-2024-RADDISCO-GH-REPO/radDisco-recon/cell-2024/MODEL"
         #"./MODEL"  #os.path.join(current_directory, "MODEL")
 

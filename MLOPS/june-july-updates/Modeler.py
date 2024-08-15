@@ -1,4 +1,3 @@
-#COPYRIGHT STEFAN L. BUND, copyright available at https://github.com/stefanbund/radidisco. No use is authorized and no sharing license is granted.
 
 from datetime import date
 from imblearn.over_sampling import RandomOverSampler, SMOTE, ADASYN, BorderlineSMOTE, SVMSMOTE,SMOTENC, KMeansSMOTE
@@ -47,13 +46,14 @@ from sklearn.model_selection import LearningCurveDisplay, ShuffleSplit
 from sklearn.inspection import DecisionBoundaryDisplay
 import pickle
 
-folder_path = '/home/stefan/Desktop/STADIUM-DATA/BBP/' #'./BBP'  #where we source sample data, for each symbol
+folder_path = './BBP'  #where we source sample data, for each symbol
 
 # The directory where your current files are located
-source_directory =  "/home/stefan/Desktop/STADIUM-DATA/MODEL-STADIUM/" # /home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/MODEL"
+source_directory = "/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/MODEL"
+
 
 # The directory where you want to move the files
-destination_directory = "/home/stefan/Desktop/STADIUM-DATA/MODEL-STADIUM/MODEL/HISTORICAL"
+destination_directory = "/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/MODEL/HISTORICAL"
 
 # Get today's date in the format YYYYMMDD
 today_date = datetime.now().strftime('%Y%m%d')
@@ -127,12 +127,12 @@ for filename in os.listdir(folder_path):  #INITIATE MODEL BUILD, PER SYMBOL
                 solution_df = pd.DataFrame(comparative)
                 d4 = date.today().strftime("%B %d, %Y")                
                 accuracy_threshold = .88
-                # model_folder = "/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/MODEL/" #used prior to july 10th
+                model_folder = "/home/stefan/Desktop/raddisco-github-repo/radDisco-recon/cell-2024/MODEL"
                 highest_accuracy_row = solution_df[solution_df['accuracy'] == solution_df['accuracy'].max()]
                 if highest_accuracy_row['accuracy'].values >= accuracy_threshold:
 
                     #fit best performing model here, get most key features, and store in model file
-                    solution_df.to_csv(f'{source_directory}{symbol}-model.csv', index=False)
+                    solution_df.to_csv(f'{model_folder}/{symbol}-model.csv', index=False)
                 else:
                     print(f"Accuracy for {symbol} does not meet the threshold.")
 
