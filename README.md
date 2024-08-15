@@ -3,10 +3,10 @@ SIADS 699 repo
 
 ### how to run our code
 1. two major executables, to start: a) on a linux machine, where node.js is istalled, [run](https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/START_SAMPLER.mjs) 'node START_SAMPLER.mjs', which will start the data sampling, live. b) use python to [begin the predictor](https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/Predictor.py), 'python3 Predictor.py'. If you are [running linux, use the](https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/run_pause_predictor.sh) 'run_pause_predictor.sh', which causes the Predictor to run continuously, without end, './run*' works fine.
-2. (run the Modeler.py)[https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/Modeler.py], to see it discover best accuracy models.
-3. (run Preprocessor.py)[https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/Preprocessor.py] to see it do data mining on surges and precursors.
-4. (run analyzePredictions.py)[https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/analyzePredictions.py] to see it estimate time durations
-5. running into issues? It was built for Ubuntu 22.4, Python 3.10.12, but a video will help illustrate our work, in addition to (our results video)[https://www.loom.com/share/c2079b7a9aee40e7b8cc203c1da98b0d?sid=0356b3b7-5a6f-4b53-b053-eaf6ec9ad537].
+2. [run the Modeler.py](https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/Modeler.py), to see it discover best accuracy models.
+3. [run Preprocessor.py](https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/Preprocessor.py) to see it do data mining on surges and precursors.
+4. [run analyzePredictions.py](https://github.com/stefanbund/capstoneppl/blob/main/MLOPS/analyzePredictions.py) to see it estimate time durations
+5. running into issues? It was built for Ubuntu 22.4, Python 3.10.12, but a video will help illustrate our work, in addition to [our results video](https://www.loom.com/share/c2079b7a9aee40e7b8cc203c1da98b0d?sid=0356b3b7-5a6f-4b53-b053-eaf6ec9ad537).
 
 ### some videos
 1. [introduction to the project](https://www.loom.com/share/dd66d1e0db974329bd64bebd8c3a97a2?sid=7cc453d4-5d2f-45cf-81aa-c066427a2425)
